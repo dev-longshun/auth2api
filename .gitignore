@@ -5,7 +5,6 @@ config.yaml
 .env
 
 # Editor / IDE local state
-.cursor/
 .idea/
 .vscode/
 *.tsbuildinfo
