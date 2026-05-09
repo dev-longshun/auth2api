@@ -6,10 +6,18 @@ COPY tsconfig.json ./
 COPY src/ src/
 RUN npx tsc
 
+FROM node:20-alpine AS ui-builder
+WORKDIR /app/admin-ui
+COPY admin-ui/package.json admin-ui/package-lock.json ./
+RUN npm ci
+COPY admin-ui/ ./
+RUN npm run build
+
 FROM node:20-alpine
 WORKDIR /app
 COPY --from=builder /app/dist dist/
 COPY --from=builder /app/node_modules node_modules/
+COPY --from=ui-builder /app/admin-ui/dist admin-ui/dist/
 COPY package.json ./
 EXPOSE 8317
 VOLUME ["/data", "/config"]
