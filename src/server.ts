@@ -1,8 +1,11 @@
 import express from "express";
+import crypto from "crypto";
 import path from "path";
 import { Config, isDebugLevel } from "./config";
 import { ProviderRegistry } from "./providers/registry";
 import { extractApiKey } from "./utils/common";
+import { generatePKCECodes } from "./auth/pkce";
+import { waitForCallback } from "./auth/callback-server";
 import {
   createChatCompletionsHandler,
   createResponsesHandler,
@@ -11,6 +14,18 @@ import {
   createMessagesHandler,
   createCountTokensHandler,
 } from "./handlers/anthropic";
+
+interface LoginSession {
+  id: string;
+  provider: string;
+  authUrl: string;
+  status: "pending" | "success" | "error";
+  email?: string;
+  error?: string;
+  createdAt: number;
+}
+
+const loginSessions = new Map<string, LoginSession>();
 
 // Simple in-memory rate limiter per IP
 const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
@@ -190,6 +205,74 @@ export function createServer(
     });
   });
 
+  app.post("/admin/login/:provider", (req, res) => {
+    const providerId = req.params.provider;
+    const provider = registry.all().find((p) => p.id === providerId);
+    if (!provider) {
+      res.status(404).json({ error: { message: "Provider not found" } });
+      return;
+    }
+
+    const pkce = generatePKCECodes();
+    const state = crypto.randomBytes(16).toString("hex");
+    const authUrl = provider.buildAuthUrl(state, pkce);
+    const sessionId = crypto.randomBytes(16).toString("hex");
+
+    const session: LoginSession = {
+      id: sessionId,
+      provider: providerId,
+      authUrl,
+      status: "pending",
+      createdAt: Date.now(),
+    };
+    loginSessions.set(sessionId, session);
+
+    waitForCallback({
+      port: provider.oauth.callbackPort,
+      callbackPath: provider.oauth.callbackPath,
+      timeoutMs: 5 * 60 * 1000,
+    })
+      .then(async (result) => {
+        const tokenData = await provider.exchangeCode(
+          result.code,
+          result.state,
+          state,
+          pkce,
+        );
+        if (!tokenData.provider) tokenData.provider = provider.id;
+        provider.manager.addAccount(tokenData);
+        if (provider.manager.accountCount === 1) {
+          provider.manager.startAutoRefresh();
+          provider.manager.startStatsLogger();
+        }
+        session.status = "success";
+        session.email = tokenData.email;
+      })
+      .catch((err: any) => {
+        session.status = "error";
+        session.error = err?.message || String(err);
+      });
+
+    res.json({ sessionId, authUrl });
+  });
+
+  app.get("/admin/login/:sessionId/status", (req, res) => {
+    const session = loginSessions.get(req.params.sessionId);
+    if (!session) {
+      res.status(404).json({ error: { message: "Session not found" } });
+      return;
+    }
+    res.json({
+      status: session.status,
+      provider: session.provider,
+      email: session.email,
+      error: session.error,
+    });
+    if (session.status !== "pending") {
+      loginSessions.delete(session.id);
+    }
+  });
+
   app.use("/v1", requireApiKey);
   app.get("/v1/models", async (_req, res) => {
     const created = Math.floor(Date.now() / 1000);
@@ -222,7 +305,13 @@ export function createServer(
 
   // Admin UI — serve built SPA from admin-ui/dist/
   const adminUiDist = path.join(__dirname, "../admin-ui/dist");
-  app.use("/admin-ui", express.static(adminUiDist));
+  app.get("/", (_req, res) => {
+    res.redirect("/admin-ui/");
+  });
+  app.use("/admin-ui", express.static(adminUiDist, { index: "index.html" }));
+  app.get("/admin-ui", (_req, res) => {
+    res.redirect("/admin-ui/");
+  });
   app.get("/admin-ui/*", (_req, res) => {
     res.sendFile(path.join(adminUiDist, "index.html"));
   });

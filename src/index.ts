@@ -156,9 +156,8 @@ async function startServer(): Promise<void> {
     .reduce((sum, p) => sum + p.manager.accountCount, 0);
   if (totalAccounts === 0) {
     console.log(
-      "No accounts found. Run with --login (and optionally --provider=codex) to add an account first.",
+      "No accounts loaded. Run with --login to add an account, or use the Admin UI after startup.",
     );
-    process.exit(1);
   }
 
   for (const p of registry.all()) {

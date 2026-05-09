@@ -4,6 +4,7 @@ import { apiFetch } from "../api/client";
 import { useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import type { AccountSnapshot } from "../types";
+import { AddAccountDialog } from "../components/accounts/AddAccountDialog";
 
 export function AccountsPage() {
   const { data, isLoading, error } = useAccounts();
@@ -32,7 +33,11 @@ export function AccountsPage() {
 
   return (
     <div className="space-y-6 animate-fade-in-up">
-      <h2 className="text-xl font-bold">Accounts</h2>
+      <div className="flex items-center justify-between">
+        <h2 className="text-xl font-bold">Accounts</h2>
+      </div>
+
+      <AddAccountDialog />
 
       {providers.length === 0 && (
         <div className="nb-card p-6 text-center text-ink/50">
