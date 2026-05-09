@@ -568,6 +568,15 @@ export class AccountManager {
     console.log(`====================================================\n`);
   }
 
+  resetCooldown(email: string): boolean {
+    const acct = this.accounts.get(email);
+    if (!acct) return false;
+    acct.cooldownUntil = 0;
+    acct.failureCount = 0;
+    acct.lastError = null;
+    return true;
+  }
+
   get accountCount(): number {
     return this.accounts.size;
   }

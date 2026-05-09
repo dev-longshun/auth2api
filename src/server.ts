@@ -1,4 +1,5 @@
 import express from "express";
+import path from "path";
 import { Config, isDebugLevel } from "./config";
 import { ProviderRegistry } from "./providers/registry";
 import { extractApiKey } from "./utils/common";
@@ -148,6 +149,47 @@ export function createServer(
     });
   });
 
+  app.post("/admin/accounts/:provider/:email/reset-cooldown", (req, res) => {
+    const provider = registry.all().find((p) => p.id === req.params.provider);
+    if (!provider) {
+      res.status(404).json({ error: { message: "Provider not found" } });
+      return;
+    }
+    const email = decodeURIComponent(req.params.email);
+    const ok = provider.manager.resetCooldown(email);
+    if (!ok) {
+      res.status(404).json({ error: { message: "Account not found" } });
+      return;
+    }
+    res.json({ success: true, email });
+  });
+
+  app.post("/admin/accounts/:provider/:email/force-refresh", async (req, res) => {
+    const provider = registry.all().find((p) => p.id === req.params.provider);
+    if (!provider) {
+      res.status(404).json({ error: { message: "Provider not found" } });
+      return;
+    }
+    const email = decodeURIComponent(req.params.email);
+    try {
+      const ok = await provider.manager.refreshAccount(email);
+      res.json({ success: ok, email });
+    } catch (err: any) {
+      res.status(500).json({ error: { message: err?.message || String(err) } });
+    }
+  });
+
+  app.get("/admin/config", (_req, res) => {
+    res.json({
+      host: config.host,
+      port: config.port,
+      "auth-dir": config["auth-dir"],
+      "body-limit": config["body-limit"],
+      debug: config.debug,
+      providers: registry.all().map((p) => p.id),
+    });
+  });
+
   app.use("/v1", requireApiKey);
   app.get("/v1/models", async (_req, res) => {
     const created = Math.floor(Date.now() / 1000);
@@ -177,6 +219,13 @@ export function createServer(
     "/v1/messages/count_tokens",
     createCountTokensHandler(config, registry),
   );
+
+  // Admin UI — serve built SPA from admin-ui/dist/
+  const adminUiDist = path.join(__dirname, "../admin-ui/dist");
+  app.use("/admin-ui", express.static(adminUiDist));
+  app.get("/admin-ui/*", (_req, res) => {
+    res.sendFile(path.join(adminUiDist, "index.html"));
+  });
 
   return app;
 }

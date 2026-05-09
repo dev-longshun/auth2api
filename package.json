@@ -10,7 +10,10 @@
     "login": "tsx src/index.ts --login",
     "test": "tsx --test tests/*.test.ts",
     "test:smoke": "tsx --test tests/smoke.test.ts",
-    "prettier": "prettier --write \"src/**/*.ts\" \"tests/**/*.ts\""
+    "prettier": "prettier --write \"src/**/*.ts\" \"tests/**/*.ts\"",
+    "ui:dev": "cd admin-ui && npm run dev",
+    "ui:build": "cd admin-ui && npm run build",
+    "ui:preview": "cd admin-ui && npm run preview"
   },
   "dependencies": {
     "express": "^4.21.0",

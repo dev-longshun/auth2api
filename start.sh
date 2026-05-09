@@ -15,17 +15,27 @@ if [ "$NODE_MAJOR" -lt 20 ]; then
   exit 1
 fi
 
-# 安装依赖
+# 安装后端依赖
 if [ ! -d "node_modules" ]; then
-  echo "📦 安装依赖..."
+  echo "📦 安装后端依赖..."
   npm install
 else
-  echo "✅ 依赖已就绪"
+  echo "✅ 后端依赖已就绪"
 fi
 
-# 编译
-echo "🔨 编译 TypeScript..."
+# 编译后端
+echo "🔨 编译后端 TypeScript..."
 npm run build
+
+# 构建前端（如果 admin-ui 目录存在）
+if [ -d "admin-ui" ]; then
+  if [ ! -d "admin-ui/node_modules" ]; then
+    echo "📦 安装前端依赖..."
+    (cd admin-ui && npm install)
+  fi
+  echo "🎨 构建 Admin UI..."
+  (cd admin-ui && npm run build)
+fi
 
 # 配置文件
 if [ ! -f "config.yaml" ]; then
@@ -35,6 +45,7 @@ fi
 
 # 启动
 echo "🚀 启动 auth2api..."
-echo "   地址: http://127.0.0.1:8317"
+echo "   API:      http://127.0.0.1:8317"
+echo "   Admin UI: http://127.0.0.1:8317/admin-ui/"
 echo ""
 node dist/index.js "$@"

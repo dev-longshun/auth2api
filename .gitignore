@@ -4,6 +4,10 @@ config.yaml
 *.log
 .env
 
+# Admin UI build output
+admin-ui/node_modules/
+admin-ui/dist/
+
 # Editor / IDE local state
 .idea/
 .vscode/

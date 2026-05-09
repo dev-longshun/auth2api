@@ -1,0 +1,80 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --color-cream: #fffef5;
+    --color-ink: #1a1423;
+    --color-orange: #ff6b35;
+    --color-blue: #004e98;
+    --color-green: #2d9b4e;
+    --color-yellow: #ffd23f;
+    --color-red: #e63946;
+    --border-width: 2.5px;
+    --shadow-offset: 4px;
+    --radius: 3px;
+  }
+
+  body {
+    min-height: 100vh;
+  }
+}
+
+@layer components {
+  .nb-card {
+    @apply bg-cream border-brutal border-ink rounded-brutal shadow-brutal;
+  }
+
+  .nb-btn {
+    @apply inline-flex items-center justify-center gap-2 px-4 py-2 font-semibold text-sm
+           border-brutal border-ink rounded-brutal shadow-brutal-sm
+           transition-all duration-150 ease-out
+           hover:-translate-y-0.5 hover:shadow-brutal
+           active:translate-y-0 active:shadow-none;
+  }
+
+  .nb-btn-primary {
+    @apply nb-btn bg-orange text-cream;
+  }
+
+  .nb-btn-secondary {
+    @apply nb-btn bg-blue text-cream;
+  }
+
+  .nb-btn-danger {
+    @apply nb-btn bg-red text-cream;
+  }
+
+  .nb-btn-ghost {
+    @apply nb-btn bg-cream text-ink;
+  }
+
+  .nb-input {
+    @apply w-full px-3 py-2 bg-white border-brutal border-ink rounded-brutal
+           text-ink placeholder:text-ink/40
+           focus:outline-none focus:shadow-brutal-sm focus:ring-0
+           transition-shadow duration-150;
+  }
+
+  .nb-badge {
+    @apply inline-flex items-center px-2 py-0.5 text-xs font-semibold
+           border-[1.5px] border-ink rounded-brutal;
+  }
+
+  .nb-badge-success {
+    @apply nb-badge bg-green text-cream;
+  }
+
+  .nb-badge-warning {
+    @apply nb-badge bg-yellow text-ink;
+  }
+
+  .nb-badge-danger {
+    @apply nb-badge bg-red text-cream;
+  }
+
+  .nb-badge-info {
+    @apply nb-badge bg-blue text-cream;
+  }
+}
